@@ -63,7 +63,7 @@ object LoadGeneration {
       case ActivateActors(testName, actors) =>
         (1 to actors).foreach { n =>
           val pid = s"${testName}-$n"
-          shardRegion ! ShardingEnvelope(pid, ConfigurablePersistentActor.WakeUp(testName))
+          shardRegion ! ShardingEnvelope(pid, ConfigurablePersistentActor.WakeUp)
         }
         Behaviors.same
     }

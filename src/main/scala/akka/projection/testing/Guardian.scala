@@ -19,6 +19,7 @@ import akka.cluster.typed.Cluster
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import akka.projection.ProjectionBehavior
+import akka.projection.testing.simulation.Engine
 
 object Guardian {
 
@@ -40,9 +41,12 @@ object Guardian {
       val loadGeneration: ActorRef[LoadGeneration.Command] =
         context.spawn(LoadGeneration(settings, shardRegion, setup), "load-generation")
 
+      val simulationEngine: ActorRef[Engine.Command] =
+        context.spawn(Engine(settings, shardRegion, setup), "simulation-engine")
+
       val httpPort = system.settings.config.getInt("test.http.port")
 
-      val server = new HttpServer(new TestRoutes(loadGeneration, setup).route, httpPort)
+      val server = new HttpServer(new TestRoutes(loadGeneration, simulationEngine, setup).route, httpPort)
       server.start()
 
       if (Cluster(system).selfMember.hasRole("read-model")) {

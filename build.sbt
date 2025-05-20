@@ -1,11 +1,11 @@
-val AkkaVersion = "2.10.0"
-val AkkaHttpVersion = "10.7.0"
-val AkkaProjectionVersion = "1.6.7"
-val AkkaManagementVersion = "1.6.0"
-val AkkaPersistenceR2dbcVersion = "1.3.1"
-val AkkaPersistenceDynamoDBVersion = "2.0.5"
-val AkkaPersistenceJdbcVersion = "5.5.0"
-val AkkaPersistenceCassandraVersion = "1.3.0"
+val AkkaVersion = "2.10.5"
+val AkkaHttpVersion = "10.7.1"
+val AkkaProjectionVersion = "1.6.13"
+val AkkaManagementVersion = "1.6.2"
+val AkkaPersistenceR2dbcVersion = "1.3.7"
+val AkkaPersistenceDynamoDBVersion = "2.0.6"
+val AkkaPersistenceJdbcVersion = "5.5.2"
+val AkkaPersistenceCassandraVersion = "1.3.2"
 
 ThisBuild / dynverSeparator := "-"
 
@@ -59,6 +59,8 @@ lazy val `akka-projection-testing` = project
       "ch.qos.logback" % "logback-classic" % "1.5.12",
       "org.postgresql" % "postgresql" % "42.7.4",
       "org.hdrhistogram" % "HdrHistogram" % "2.2.2",
+      "org.apache.commons" % "commons-rng-simple" % "1.6",
+      "org.apache.commons" % "commons-statistics-distribution" % "1.1",
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
