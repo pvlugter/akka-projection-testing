@@ -12,12 +12,13 @@ import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Post
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.unmarshalling._
 import akka.management.cluster.ClusterHttpManagementJsonProtocol
 import akka.management.cluster.ClusterMembers
-import akka.projection.testing.TestRoutes.RunTest
 import akka.projection.testing.TestRoutes._
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
@@ -29,8 +30,9 @@ import org.scalatest.time.Milliseconds
 import org.scalatest.time.Seconds
 import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpec
+import spray.json._
 
-class IntegrationSpec
+class SimulationIntegrationSpec
     extends AnyWordSpec
     with Eventually
     with BeforeAndAfterAll
@@ -45,7 +47,7 @@ class IntegrationSpec
   private var systems: Set[ActorSystem] = Set(testSystem)
 
   "End to end test" should {
-    "work" in {
+    "run simulation" in {
       val configResource = sys.props.getOrElse("test.config", "local")
       val config = ConfigFactory.load(configResource)
       systems += Main.startNode(2551, 8051, 9001, 8551, config).toClassic
@@ -53,15 +55,56 @@ class IntegrationSpec
       systems += Main.startNode(2552, 8052, 9002, 8552, config).toClassic
       validateAllMembersUp(8552, 2)
 
-      val test = RunTest(None, 100, 1, 1, 100, 10000)
-      val response = Unmarshal(Http().singleRequest(Post("http://127.0.0.1:8051/test", test)).futureValue.entity)
-        .to[RunTestResponse]
-        .futureValue
+      val simulation = """
+        {
+          "simulation": {
+            "stages": [
+              {
+                "duration": "3s",
+                "generators": [
+                  {
+                    "entityId": {
+                      "entity": {
+                        "count": 100
+                      }
+                    },
+                    "activity": {
+                      "frequency": "10/s",
+                      "duration": "1s",
+                      "event": {
+                        "frequency": "10/s",
+                        "dataSize": "100B"
+                      }
+                    },
+                    "random": {
+                      "seed": 123456789
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      """
+
+      val run = simulation.parseJson.convertTo[RunSimulation]
+      run.simulation.stages.size shouldBe 1
+
+      val entity = HttpEntity(ContentTypes.`application/json`, simulation)
+
+      val response =
+        Unmarshal(
+          Http()
+            .singleRequest(Post("http://127.0.0.1:8051/simulation/run", entity))
+            .futureValue
+            .entity)
+          .to[RunSimulationResponse]
+          .futureValue
 
       eventually {
         val result = Unmarshal(
           Http()
-            .singleRequest(HttpRequest(uri = s"http://127.0.0.1:8051/test/${response.testName}"))
+            .singleRequest(HttpRequest(uri = s"http://127.0.0.1:8051/simulation/status/${response.runId}"))
             .futureValue
             .entity).to[String].futureValue
         println("got result: " + result)
